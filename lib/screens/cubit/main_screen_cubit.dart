@@ -1,14 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../db/db_provider.dart';
+import '../../models/kinetic_record.dart';
+import '../../prefs/prefs_service.dart';
 import 'main_screen_state.dart';
 
 class MainScreenCubit extends Cubit<MainScreenState> {
   MainScreenCubit() : super(MainScreenInitialState());
 
-  void calculateEnergy({
+  Future<void> calculateEnergy({
     required String massStr,
     required String velocityStr,
     required bool agreement,
-  }) {
+  }) async {
     if (massStr.isEmpty || velocityStr.isEmpty) {
       emit(MainScreenErrorState('Заполните все поля!'));
       return;
@@ -19,8 +22,8 @@ class MainScreenCubit extends Cubit<MainScreenState> {
       return;
     }
 
-    double? mass = double.tryParse(massStr);
-    double? velocity = double.tryParse(velocityStr);
+    final double? mass = double.tryParse(massStr);
+    final double? velocity = double.tryParse(velocityStr);
 
     if (mass == null || velocity == null) {
       emit(MainScreenErrorState('Введите корректные числа!'));
@@ -32,7 +35,20 @@ class MainScreenCubit extends Cubit<MainScreenState> {
       return;
     }
 
-    double energy = (mass * velocity * velocity) / 2;
+    final double energy = (mass * velocity * velocity) / 2;
+
+    try {
+      await DBProvider.db.insert(KineticRecord(
+        mass: mass,
+        velocity: velocity,
+        energy: energy,
+        createdAt: DateTime.now(),
+      ));
+      await PrefsService().saveLast(mass: mass, velocity: velocity);
+    } catch (e) {
+      // ignore: avoid_print
+      print('Save error: $e');
+    }
 
     emit(MainScreenResultState(
       mass: mass,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'cubit/main_screen_cubit.dart';
 import 'cubit/main_screen_state.dart';
+import 'history_screen.dart';
+import '../prefs/prefs_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,6 +18,21 @@ class _MainScreenState extends State<MainScreen> {
   bool _agreement = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadLastValues();
+  }
+
+  Future<void> _loadLastValues() async {
+    final last = await PrefsService().loadLast();
+    if (!mounted) return;
+    setState(() {
+      if (last.mass != null) _massController.text = last.mass.toString();
+      if (last.velocity != null) _velocityController.text = last.velocity.toString();
+    });
+  }
+
+  @override
   void dispose() {
     _massController.dispose();
     _velocityController.dispose();
@@ -26,7 +43,17 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Гомбоева Долгор Пурбожаповна'), // Замени на свое ФИО
+        // п.7 ЛР5: кнопка перехода на экран истории
+        leading: IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: 'История расчётов',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+            );
+          },
+        ),
+        title: const Text('Гомбоева Долгор Пурбожаповна'),
         centerTitle: true,
       ),
       body: BlocConsumer<MainScreenCubit, MainScreenState>(
